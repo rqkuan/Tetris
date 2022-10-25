@@ -4,6 +4,7 @@ from pieces import *
 
 class Board:
 
+    # Constructor: creates and displays an empty 10x20 board
     def __init__(self, root):
         self.board = [[Block(i, j) for i in range(10)] for j in range(21)]
         for i in self.board:
@@ -13,6 +14,7 @@ class Board:
         for b in self.board[20]:
             b.canvas.config(bg="gray", highlightbackground="gray")
 
+    # Check if a line is full
     def line_is_full(self, line):
         full = True
         for i in range(10):
@@ -20,6 +22,7 @@ class Board:
                 full = False
         return full
 
+    # Check a line (also moves the lines above down appropriately)
     def clear_line(self, line):
         for i in range(line):
             for j in range(10):
@@ -27,6 +30,7 @@ class Board:
         for i in range(10):
             self.board[0][i].canvas.config(bg="black")
 
+    # Check if the space immediately below a piece is empty
     def below_is_empty(self, blocks):
         empty = True
         checklist = []
@@ -45,12 +49,14 @@ class Board:
                 empty = False
         return empty
 
+    # Helper method to determine if the x coordinate of a given point is out of bounds
     @staticmethod
     def out_of_bounds(x):
         if x > 9 or x < 0:
             return True
         return False
 
+    # Check if the space immediately to the left of a piece is empty
     def left_is_empty(self, blocks):
         empty = True
         checklist = []
@@ -71,6 +77,7 @@ class Board:
                 empty = False
         return empty
 
+    # Check if the space immediately to the right of a piece is empty
     def right_is_empty(self, blocks):
         empty = True
         checklist = []
@@ -91,7 +98,8 @@ class Board:
                 empty = False
         return empty
 
-    def check_rotate(self, piece, blocks, offsetX=0, offsetY=0):
+    # Check if the space that a piece would occupy if it was rotated is empty
+    def check_rotate(self, piece, blocks, offsetX, offsetY):
         empty = True
         piece.draw(blocks, "black")
         for b in blocks:

@@ -1,5 +1,6 @@
 class Block:
 
+    # Constructor
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -7,6 +8,7 @@ class Block:
 
 class Piece:
 
+    # Constructor: initializes a bunch of variables
     def __init__(self, root, board):
         self.board = board
         self.root = root
@@ -20,106 +22,111 @@ class Piece:
         self.root.bind('<space>', self.drop)
         self.refX = 3
         self.refY = -1
-        self.ghosts = []
+        self.shadows = []
         self.drop_score = 0
+        # Check to see if the piece would cause a death
         for b in self.blocks:
             if self.board.board[b.y][b.x].canvas["background"] != "black":
                 self.death = True
-            self.ghosts.append(Block(b.x, b.y))
-        for i in range(20):
-            if self.board.below_is_empty(self.ghosts):
-                for g in self.ghosts:
-                    g.y += 1
-        self.draw(self.ghosts, "gray")
+        # Create and draw the shadow
+        self.shadow()
+        # Draw the blocks
         self.draw(self.blocks, self.color)
 
+    # Draw a set of blocks (used for the actual blocks and the shadow blocks)
     def draw(self, items, color):
         for i in items:
             self.board.board[i.y][i.x].canvas.config(bg=color)
 
+    # Make the piece fall by 1 cell (also serves as the function for soft dropping)
     def fall(self, filler):
+        # Make sure the game isn't paused
         if self.pause:
             pass
+        # Fall if possible
         elif self.board.below_is_empty(self.blocks):
             self.refY += 1
             self.draw(self.blocks, "black")
             for b in self.blocks:
                 b.y += 1
             self.draw(self.blocks, self.color)
-            if filler == "hard drop":
+            if filler == "hard drop":  # Reward 2 points per cell if hard dropped
                 self.drop_score += 2
-            elif filler != "":
+            elif filler != "":  # Reward 1 point per cell if soft dropped
                 self.drop_score += 1
+        # If not possible, make self.fallen True
         else:
             self.fallen = True
 
+    # Hard drop the piece (fall 20 times)
     def drop(self, filler):
         for i in range(20):
-            self.fall("(Player input)")
+            self.fall("hard drop")
+            # This string differentiates the hard drop due to a player input from falling due to gravity
 
-    def ghost(self):
-        self.draw(self.ghosts, "black")
-        self.ghosts = []
+    # Find the coordinates of the shadow and draw it
+    def shadow(self):
+        self.draw(self.shadows, "black")
+        self.shadows = []
         for b in self.blocks:
-            self.ghosts.append(Block(b.x, b.y))
+            self.shadows.append(Block(b.x, b.y))
         for i in range(20):
-            if self.board.below_is_empty(self.ghosts):
-                for g in self.ghosts:
-                    g.y += 1
-        self.draw(self.ghosts, "gray")
+            if self.board.below_is_empty(self.shadows):
+                for s in self.shadows:
+                    s.y += 1
+        self.draw(self.shadows, "gray")
 
+    # Try to move the piece to the left
     def move_left(self, filler):
+        # Make sure the game isn't paused
         if self.pause:
             pass
+        # Move left if possible
         elif self.board.left_is_empty(self.blocks) and not self.fallen:
             self.refX -= 1
             self.draw(self.blocks, "black")
             for b in self.blocks:
                 b.x -= 1
-            self.ghost()
+            self.shadow()
             self.draw(self.blocks, self.color)
 
+    # Try to move the piece to the right
     def move_right(self, filler):
+        # Make sure the game isn't paused
         if self.pause:
             pass
+        # Move right if possible
         elif self.board.right_is_empty(self.blocks) and not self.fallen:
             self.refX += 1
             self.draw(self.blocks, "black")
             for b in self.blocks:
                 b.x += 1
-            self.ghost()
+            self.shadow()
             self.draw(self.blocks, self.color)
 
+    # Try to rotate the piece
     def rotate(self, filler):
+        # Make sure the game isn't paused
         if self.pause:
             pass
-        #default rotate
-        elif self.board.check_rotate(self, self.blocks) and not self.fallen:
-            for b in self.blocks:
-                temp = b.y
-                b.y = self.refY+b.x-self.refX
-                b.x = self.refX+3-temp+self.refY
-            self.ghost()
-            self.draw(self.blocks, self.color)
-        #rotate with kick right by 1
-        elif self.board.check_rotate(self, self.blocks, 1, 0) and not self.fallen:
-            for b in self.blocks:
-                temp = b.y
-                b.y = self.refY+b.x-self.refX
-                b.x = self.refX+3-temp+self.refY + 1
-            self.refX += 1
-            self.ghost()
-            self.draw(self.blocks, self.color)
-        #rotate with kick left by 1
-        elif self.board.check_rotate(self, self.blocks, -1, 0) and not self.fallen:
-            for b in self.blocks:
-                temp = b.y
-                b.y = self.refY+b.x-self.refX
-                b.x = self.refX+3-temp+self.refY - 1
-            self.refX -= 1
-            self.ghost()
-            self.draw(self.blocks, self.color)
-
+        # Try default rotate
+        else:
+            # Make a list of possible offsets (x, y)
+            try_rotate = [[0, 0], [1, 0], [-1, 0], [2, 0], [-2, 0],
+                          [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1],
+                          [0, 2], [1, 2], [-1, 2], [2, 2], [-2, 2]]
+            # Go through the offsets until one works
+            for n in try_rotate:
+                if self.board.check_rotate(self, self.blocks, n[0], n[1]) and not self.fallen:
+                    for b in self.blocks:
+                        temp = b.y
+                        b.y = self.refY + b.x - self.refX + n[1]
+                        b.x = self.refX + 3 - temp + self.refY + n[0]
+                    self.refX += n[0]
+                    self.refY += n[1]
+                    self.shadow()
+                    self.draw(self.blocks, self.color)
+                    return ""
 
 class TPiece(Piece):
 
